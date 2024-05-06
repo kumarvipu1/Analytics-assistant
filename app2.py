@@ -18,6 +18,8 @@ st.set_page_config(
 
 st.set_option('deprecation.showPyplotGlobalUse', False)
 
+api_key = None
+
 @contextlib.contextmanager
 def capture_output():
     new_out = io.StringIO()
@@ -41,12 +43,14 @@ def main():
         # Setting up llm agent
         df = pd.read_csv(uploaded_file)
 
-        agent = create_pandas_dataframe_agent(
-            ChatOpenAI(temperature=0.0, model='gpt-3.5-turbo-0613'),
-            df, verbose=False,
-            agent_type=AgentType.OPENAI_FUNCTIONS,
-            handle_parsing_errors=True,
-        )
+        if api_key:
+            agent = create_pandas_dataframe_agent(
+                ChatOpenAI(temperature=0.0, model='gpt-3.5-turbo-0613',
+                           openai_api_key=api_key),
+                df, verbose=False,
+                agent_type=AgentType.OPENAI_FUNCTIONS,
+                handle_parsing_errors=True,
+            )
 
         def_res = agent.invoke(new_prompt.format(query_str='explain me like five each column in the dataframe "df" in bullet points'))
         print(def_res)

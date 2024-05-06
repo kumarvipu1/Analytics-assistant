@@ -31,6 +31,8 @@ st.set_page_config(
 
 st.set_option('deprecation.showPyplotGlobalUse', False)
 
+api_key = None  # Replace None with your api key
+
 @contextlib.contextmanager
 def capture_output():
     new_out = io.StringIO()
@@ -66,7 +68,11 @@ def main():
                                  ),
                  ]
 
-        llm = OpenAI(model="gpt-3.5-turbo-0613")
+        if api_key:
+            llm = OpenAI(model="gpt-3.5-turbo-0613", api_key=api_key)
+        else:
+            llm = OpenAI(model="gpt-3.5-turbo-0613", api_key=api_key)
+
         llm_agent = ReActAgent.from_tools(tools, llm=llm, verbose=True,
                                           context=context)
 

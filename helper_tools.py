@@ -3,13 +3,14 @@ from llama_index.core.agent import ReActAgent
 from llama_index.llms.openai import OpenAI
 import plotly.express as px
 import streamlit as st
+import re
 from llama_index.core.tools import QueryEngineTool, ToolMetadata
 import pandas as pd
 
 
 
 @st.cache_data
-def plot_graph(df, x_col, y_col, graph_type):
+def plot_graph(df, x_col, y_col, type):
     """
     Plot a Plotly Express graph based on the type of graph requested.
 
@@ -22,34 +23,39 @@ def plot_graph(df, x_col, y_col, graph_type):
     Returns:
     None
     """
-    if graph_type == 'line':
+    if type == 'line':
         fig = px.line(df, x=x_col, y=y_col)
-    elif graph_type =='scatter':
+    elif type =='scatter':
         fig = px.scatter(df, x=x_col, y=y_col)
-    elif graph_type == 'bar':
+    elif type == 'bar':
         fig = px.bar(df, x=x_col, y=y_col)
-    elif graph_type == 'histogram':
+    elif type == 'histogram':
         fig = px.histogram(df, x=x_col, y=y_col)
     else:
-        raise ValueError(f"Invalid graph type: {graph_type}. Supported types are 'line','scatter', 'bar', 'histogram'")
+        raise ValueError(f"Invalid graph type: {type}. Supported types are 'line','scatter', 'bar', 'histogram'")
 
     fig.show()
 
 
-def get_schema(df, column_list):
-    """
+def parse_response(response):
+    decoded = bytes(str(response), "utf-8").decode("unicode_escape")
+    pattern = r'```python\s*([\s\S]*?)\s*```'
 
-    :param df: main dataframe (pandas DataFrame)
-    :param column_list: list of columns of interest
-    :return:
-    """
-    print('just a placeholder')
+    matches = re.findall(pattern, decoded)
+    if matches:
+        code = str(matches[0])
+        text = re.sub(re.escape(code), "", decoded).strip()
+    else:
+        code = "print("")"
+        text = decoded
+
+    return code, text
 
 
 graph_plot_engine = FunctionTool.from_defaults(
     fn=plot_graph,
     tool_metadata=ToolMetadata(
-    name="graph plotter",
+    name="graph",
     description="Plots a suitable type of graph based on requirement and column input, the options to pick from are 'line','scatter', 'bar', 'histogram'",)
 
     )

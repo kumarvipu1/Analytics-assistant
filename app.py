@@ -11,13 +11,6 @@ from prompt import instruction_st, new_prompt, context
 import contextlib
 import sys
 import io
-import numpy as np
-import plotly.express as px
-import altair as alt
-import json
-import openai
-import json
-from datetime import date
 
 
 # Setting up agent
@@ -71,7 +64,7 @@ def main():
         if api_key:
             llm = OpenAI(model="gpt-3.5-turbo-0613", api_key=api_key)
         else:
-            llm = OpenAI(model="gpt-3.5-turbo-0613", api_key=api_key)
+            llm = OpenAI(model="gpt-3.5-turbo-0613")
 
         llm_agent = ReActAgent.from_tools(tools, llm=llm, verbose=True,
                                           context=context)

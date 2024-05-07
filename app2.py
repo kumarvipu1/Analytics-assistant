@@ -1,13 +1,20 @@
 import pandas as pd
+import matplotlib
 from langchain.agents.agent_types import AgentType
 from langchain_experimental.agents.agent_toolkits import create_pandas_dataframe_agent
 from langchain_openai import ChatOpenAI
 import streamlit as st
-from langchain_prompt import new_prompt
+from langchain_prompt import main_prompt
 import contextlib
 import sys
 import io
+from llama_index.experimental.query_engine import PandasQueryEngine
+from llama_index.core.tools import QueryEngineTool, ToolMetadata
+from llama_index.core.agent import ReActAgent
+from llama_index.llms.openai import OpenAI
+from prompt import instruction_st, new_prompt, context
 from helper_tools import graph_plot_engine, parse_response
+matplotlib.use('agg')
 
 # Page configuration
 st.set_page_config(
@@ -43,19 +50,50 @@ def main():
         # Setting up llm agent
         df = pd.read_csv(uploaded_file)
 
+        # initializing tools for llama_index agent
+        query_agent = PandasQueryEngine(df=df, verbose=True, instruction_srt=instruction_st)
+
+        query_agent.update_prompts({"pandas_prompt": new_prompt})
+
+        tools = [QueryEngineTool(query_engine=query_agent,
+                                 metadata=ToolMetadata(
+                                     name="pandas_query_agent",
+                                     description="used for query pandas dataframe for data analytics needs"),
+                                 ),
+                 ]
+
         if api_key:
+            # langchain agent
             agent = create_pandas_dataframe_agent(
                 ChatOpenAI(temperature=0.0, model='gpt-3.5-turbo-0613',
-                           openai_api_key=api_key),
+                           openai_api_key=api_key, handle_parsing_errors=True),
                 df, verbose=False,
                 agent_type=AgentType.OPENAI_FUNCTIONS,
                 handle_parsing_errors=True,
             )
 
-        def_res = agent.invoke(new_prompt.format(query_str='explain me like five each column in the dataframe "df" in bullet points'))
-        print(def_res)
+            # llama_index agent
+            llm = OpenAI(model="gpt-3.5-turbo-0613", api_key=api_key)
 
-        exp_output = str(def_res['output']).split("\n\n")[0]
+        else:
+
+            # langchain_agent
+            agent = create_pandas_dataframe_agent(
+                ChatOpenAI(temperature=0.0, model='gpt-3.5-turbo-0613'),
+                df, verbose=False,
+                agent_type=AgentType.OPENAI_FUNCTIONS,
+                handle_parsing_errors=True,
+            )
+
+            # llama_index agent
+            llm = OpenAI(model="gpt-3.5-turbo-0613", api_key=api_key)
+
+        # llama_index agent with tools
+        llm_agent = ReActAgent.from_tools(tools, llm=llm, verbose=True,
+                                          context=context)
+
+        exp_result = llm_agent.query('explain me like five each column in the dataset df in bullet points')
+        exp_output = str(exp_result)
 
         st.title('Your Personal Data Analyst!')
 
@@ -63,6 +101,7 @@ def main():
         st.write("### Data Preview")
         st.write(df_sum)
 
+        # explanation of dataset using llama_index
         with st.expander("See explanation"):
             st.write(exp_output)
 
@@ -71,9 +110,8 @@ def main():
         with col[0]:
             st.markdown('#### Visualization 1')
 
-            result = agent.invoke(new_prompt.format(query_str="provide python code to visualize the most insightful categorical variable and one \
+            result = agent.invoke(main_prompt.format(query_str="provide python code to visualize the most insightful categorical variable and one \
             of the numeric variable from this data"))
-
 
             code, text = parse_response(result['output'])
             print(code)
@@ -92,7 +130,7 @@ def main():
         with col[1]:
             st.markdown('#### Visualization 2')
 
-            result2 = agent.invoke(new_prompt.format(query_str="provide python code to visualise one of the insightful categorical variable with maximum 10 unique categories and a corresponding insightful numeric variable"))
+            result2 = agent.invoke(main_prompt.format(query_str="provide python code to visualise one of the insightful categorical variable with maximum 10 unique categories and a corresponding insightful numeric variable"))
             print(result2)
             code, text = parse_response(result2['output'])
 

@@ -18,6 +18,9 @@ import matplotlib.pyplot as plt
 import time
 import plotly.express as px
 import plotly.graph_objects as go
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
 matplotlib.use('agg')
 
@@ -30,7 +33,7 @@ st.set_page_config(
 
 st.set_option('deprecation.showPyplotGlobalUse', False)
 
-api_key = None
+api_key=os.getenv('OPENAI_API_KEY')
 
 
 @contextlib.contextmanager
@@ -50,9 +53,34 @@ def main():
 
     st.title('Your Personal Data Analyst!')
 
-    with st.sidebar:
-        uploaded_file = st.file_uploader("Upload your csv file here")
+    if 'form_submitted' not in st.session_state:
+        st.session_state['form_submitted'] = False
+    
+    uploaded_file = None
 
+    with st.sidebar:
+        if not st.session_state['form_submitted']:
+            with st.form(key='myform'):
+                st.write('Get the latest updates')
+                firstname = st.text_input("First Name")
+                lastname = st.text_input("Last Name")
+                email = st.text_input("Email")
+                occupation = st.text_input("Occupation (Optional)")
+                company = st.text_input("Company (Optional)")
+                Phone = st.text_input("Phone (Optional)")
+                submit_button=st.form_submit_button(label='Submit')
+
+                if firstname and lastname and email and submit_button:
+                    st.session_state['form_submitted'] = True
+                    st.success("Your form has been submitted, thank you.")
+                    st.experimental_rerun()
+                else:
+                    st.warning("Please fill in all fields before submitting")       
+
+        if st.session_state['form_submitted']:
+            uploaded_file = st.file_uploader("Upload your csv file here")
+    
+            
     if uploaded_file:
 
         # Setting up llm agent
@@ -70,17 +98,17 @@ def main():
         query_agent.update_prompts({"pandas_prompt": new_prompt})
 
         tools = [QueryEngineTool(query_engine=query_agent,
-                                 metadata=ToolMetadata(
-                                     name="pandas_query_agent",
-                                     description="used for query pandas dataframe for data analytics needs"),
-                                 ),
-                 ]
+                                metadata=ToolMetadata(
+                                    name="pandas_query_agent",
+                                    description="used for query pandas dataframe for data analytics needs"),
+                                ),
+                ]
 
         if api_key:
             # langchain agent
             agent = create_pandas_dataframe_agent(
                 ChatOpenAI(temperature=0.5, model='gpt-3.5-turbo-0613',
-                           openai_api_key=api_key),
+                        openai_api_key=api_key),
                 df, verbose=False,
                 agent_type=AgentType.OPENAI_FUNCTIONS
             )
@@ -102,7 +130,7 @@ def main():
 
         # llama_index agent with tools
         llm_agent = ReActAgent.from_tools(tools, llm=llm, verbose=False,
-                                          context=context)
+                                        context=context)
 
         exp_result = llm_agent.query('explain me like five each column in the dataset df in bullet points')
         exp_output = str(exp_result)
@@ -147,9 +175,9 @@ def main():
                 time.sleep(2)
                 # Plot using Plotly Express
                 fig = px.bar(filtered_df, x=selected_x1, y=selected_y1, color=selected_z1,
-                             title='Plot 1',
-                             labels={'x': 'x', 'y': 'Mean of User Score', 'z': 'Z'},
-                             color_discrete_sequence=px.colors.qualitative.Set1)
+                            title='Plot 1',
+                            labels={'x': 'x', 'y': 'Mean of User Score', 'z': 'Z'},
+                            color_discrete_sequence=px.colors.qualitative.Set1)
 
                 # Show the plot
                 st.plotly_chart(fig, use_container_width=True)
@@ -187,9 +215,9 @@ def main():
                 time.sleep(2)
                 # Plot using Plotly Express
                 fig = px.bar(filtered_df, x=selected_x2, y=selected_y2, color=selected_z2,
-                             title='Plot 1',
-                             labels={'x': 'x', 'y': 'Mean of User Score', 'z': 'Z'},
-                             color_discrete_sequence=px.colors.qualitative.Set1)
+                            title='Plot 1',
+                            labels={'x': 'x', 'y': 'Mean of User Score', 'z': 'Z'},
+                            color_discrete_sequence=px.colors.qualitative.Set1)
 
                 # Show the plot
                 st.plotly_chart(fig, use_container_width=True)
@@ -212,6 +240,9 @@ def main():
                     exec(code)
                     output = captured.getvalue() + '\n'
                 st.write(output)
+
+                    
+                
 
 
 if __name__ == "__main__":

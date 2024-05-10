@@ -20,6 +20,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import os
 from dotenv import load_dotenv
+from helper_tools import save_user_form
 load_dotenv()
 
 matplotlib.use('agg')
@@ -67,11 +68,15 @@ def main():
                 email = st.text_input("Email")
                 occupation = st.text_input("Occupation (Optional)")
                 company = st.text_input("Company (Optional)")
-                Phone = st.text_input("Phone (Optional)")
+                phone = st.text_input("Phone (Optional)")
                 submit_button=st.form_submit_button(label='Submit')
+
+                user_form_df = pd.DataFrame(columns=['firstname', 'lastname', 'email', 'occupation', 'company', 'Phone'])
+                user_form_df.loc[0] = [firstname, lastname, email, occupation, company, phone]
 
                 if firstname and lastname and email and submit_button:
                     st.session_state['form_submitted'] = True
+                    save_user_form(user_form_df, firstname, lastname, email, occupation, company, phone)
                     st.success("Your form has been submitted, thank you.")
                     st.experimental_rerun()
                 else:

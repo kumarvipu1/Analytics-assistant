@@ -6,6 +6,7 @@ import streamlit as st
 import re
 from llama_index.core.tools import QueryEngineTool, ToolMetadata
 import pandas as pd
+import os
 
 
 
@@ -59,3 +60,21 @@ graph_plot_engine = FunctionTool.from_defaults(
     description="Plots a suitable type of graph based on requirement and column input, the options to pick from are 'line','scatter', 'bar', 'histogram'",)
 
     )
+
+def save_user_form(user_form_df, firstname, lastname, email, occupation, company, phone):
+    file_path = 'user_forms.csv'
+    
+    new_entry = {
+        'firstname': firstname,
+        'lastname': lastname,
+        'email': email,
+        'occupation': occupation,
+        'company': company,
+        'Phone': phone
+    }
+
+    user_form_df = pd.DataFrame([new_entry])
+    file_exists = os.path.exists(file_path)
+    user_form_df.to_csv(file_path, mode='a', header=not file_exists, index=False)
+
+    return None

@@ -20,7 +20,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 import os
 from dotenv import load_dotenv
-from helper_tools import save_user_form
+from helper_tools import save_user_form_to_bigquery
+
 load_dotenv()
 
 matplotlib.use('agg')
@@ -34,7 +35,7 @@ st.set_page_config(
 
 st.set_option('deprecation.showPyplotGlobalUse', False)
 
-api_key=os.getenv('OPENAI_API_KEY')
+api_key = os.getenv('OPENAI_API_KEY')
 
 
 @contextlib.contextmanager
@@ -49,14 +50,14 @@ def capture_output():
 
 
 def main():
-    # create sidebar
+    # Create sidebar
     st.sidebar.write('**Upload your data here 👇**')
 
     st.title('Your Personal Data Analyst!')
 
     if 'form_submitted' not in st.session_state:
         st.session_state['form_submitted'] = False
-    
+
     uploaded_file = None
 
     with st.sidebar:
@@ -69,32 +70,27 @@ def main():
                 occupation = st.text_input("Occupation (Optional)")
                 company = st.text_input("Company (Optional)")
                 phone = st.text_input("Phone (Optional)")
-                submit_button=st.form_submit_button(label='Submit')
-
-                user_form_df = pd.DataFrame(columns=['firstname', 'lastname', 'email', 'occupation', 'company', 'Phone'])
-                user_form_df.loc[0] = [firstname, lastname, email, occupation, company, phone]
+                submit_button = st.form_submit_button(label='Submit')
 
                 if firstname and lastname and email and submit_button:
                     st.session_state['form_submitted'] = True
-                    save_user_form(user_form_df, firstname, lastname, email, occupation, company, phone)
-                    st.success("Your form has been submitted, thank you.")
-                    st.experimental_rerun()
+                    save_user_form_to_bigquery(firstname, lastname, email, occupation, company, phone)
+                    st.rerun()
                 else:
-                    st.warning("Please fill in all fields before submitting")       
+                    st.warning("Please fill in all fields before submitting")
 
         if st.session_state['form_submitted']:
+            st.write("Thank you for submitting your information.")
             uploaded_file = st.file_uploader("Upload your csv file here")
-    
-            
-    if uploaded_file:
 
+    if uploaded_file:
         # Setting up llm agent
         df = pd.read_csv(uploaded_file)
 
         # Get all categorical variables
         categorical_vars = list(df.select_dtypes(include=['object', 'category']).columns)
 
-        # Get all categorical variables
+        # Get all numeric variables
         numeric_vars = list(df.select_dtypes(include=['int64', 'float64']).columns)
 
         # initializing tools for llama_index agent
@@ -103,10 +99,10 @@ def main():
         query_agent.update_prompts({"pandas_prompt": new_prompt})
 
         tools = [QueryEngineTool(query_engine=query_agent,
-                                metadata=ToolMetadata(
-                                    name="pandas_query_agent",
-                                    description="used for query pandas dataframe for data analytics needs"),
-                                ),
+                                 metadata=ToolMetadata(
+                                     name="pandas_query_agent",
+                                     description="used for query pandas dataframe for data analytics needs"),
+                                 )
                 ]
 
         if api_key:

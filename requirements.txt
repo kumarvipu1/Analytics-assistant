@@ -1,0 +1,13 @@
+pandas
+matplotlib
+langchain
+langchain-experimental
+langchain-openai
+openai
+streamlit
+llama-index
+llama-index-experimental
+plotly
+python-dotenv
+google-cloud-bigquery
+google-auth

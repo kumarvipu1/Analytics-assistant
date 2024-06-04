@@ -1,4 +1,3 @@
-
 import logging
 from google.cloud import bigquery
 from google.oauth2 import service_account
@@ -9,16 +8,26 @@ def check_bigquery_access():
         credentials = service_account.Credentials.from_service_account_file(key_path)
         client = bigquery.Client(credentials=credentials, project='analyticsassistantproject')
 
-        dataset_id = 'user_forms'
-        dataset_ref = bigquery.DatasetReference(client.project, dataset_id)
-        tables = list(client.list_tables(dataset_ref))
+        dataset_id = 'analyticsassistantproject.user_forms'
+        dataset = client.get_dataset(dataset_id)  # Make an API request.
 
-        if tables:
-            logging.info("Access to dataset confirmed. List of tables:")
-            for table in tables:
-                logging.info(table.table_id)
+        full_dataset_id = "{}.{}".format(dataset.project, dataset.dataset_id)
+        friendly_name = dataset.friendly_name
+        print(
+            "Got dataset '{}' with friendly_name '{}'.".format(
+                full_dataset_id, friendly_name
+            )
+        )
+
+        # View dataset properties.
+        print("Description: {}".format(dataset.description))
+        print("Labels:")
+        labels = dataset.labels
+        if labels:
+            for label, value in labels.items():
+                print("\t{}: {}".format(label, value))
         else:
-            logging.info("Dataset exists but no tables found.")
+            print("\tDataset has no labels defined.")
 
     except Exception as e:
         logging.error(f"Exception occurred: {e}")

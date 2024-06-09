@@ -1,15 +1,14 @@
 from llama_index.core.tools import FunctionTool
 from llama_index.core.agent import ReActAgent
 from llama_index.llms.openai import OpenAI
-from google.cloud import bigquery
-from google.oauth2 import service_account
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 import plotly.express as px
 import streamlit as st
 import re
 from llama_index.core.tools import QueryEngineTool, ToolMetadata
 import pandas as pd
 import os
-import logging
 
 
 
@@ -66,43 +65,14 @@ graph_plot_engine = FunctionTool.from_defaults(
     )
 
 # Function to save user form data to BigQuery
-def save_user_form_to_bigquery(firstname, lastname, email, occupation, company, phone):
-    # Set up logging
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    logger = logging.getLogger(__name__)
+def connect_to_gsheets(json_keyfile_name, sheet_name):
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    creds = ServiceAccountCredentials.from_json_keyfile_name(json_keyfile_name, scope)
+    client = gspread.authorize(creds)
+    sheet = client.open(sheet_name).sheet1
+    return sheet
 
-    try:
-        # Replace 'path/to/your/service_account.json' with the actual path to your service account key file
-        key_path = '/Users/Mishael.Ralph-Gbobo/PycharmProjects/Analytics-assistant/service_account.json'
-        credentials = service_account.Credentials.from_service_account_file(key_path)
-        client = bigquery.Client(credentials=credentials, project='analyticsassistantproject')
-
-        dataset_id = 'user_forms'  # Corrected dataset ID
-        table_id = 'user_forms'  # Corrected table ID
-
-        # Construct the table reference
-        table_ref = client.dataset(dataset_id).table(table_id)
-
-        # Get the table to ensure it exists
-        table = client.get_table(table_ref)
-
-        # Define the rows to insert
-        rows_to_insert = [{
-            "firstname": firstname,
-            "lastname": lastname,
-            "email": email,
-            "occupation": occupation,
-            "company": company,
-            "phone": phone
-        }]
-
-        # Insert rows
-        errors = client.insert_rows_json(table, rows_to_insert)
-
-        if not errors:
-            logger.info("New rows have been added.")
-        else:
-            logger.error(f"Encountered errors while inserting rows: {errors}")
-
-    except Exception as e:
-        logger.error(f"Exception occurred: {e}")
+def save_to_gsheets(json_keyfile_name, sheet_name, firstname, lastname, email, occupation, company, phone):
+    sheet = connect_to_gsheets(json_keyfile_name, sheet_name)
+    row = [firstname, lastname, email, occupation, company, phone]
+    sheet.append_row(row)

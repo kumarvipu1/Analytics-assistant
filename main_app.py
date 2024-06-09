@@ -20,7 +20,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import os
 from dotenv import load_dotenv
-from helper_tools import save_user_form_to_bigquery
+from helper_tools import save_to_gsheets
 
 load_dotenv()
 
@@ -74,10 +74,14 @@ def main():
 
                 if firstname and lastname and email and submit_button:
                     st.session_state['form_submitted'] = True
-                    save_user_form_to_bigquery(firstname, lastname, email, occupation, company, phone)
+                    # Save the user form data to Google Sheets
+                    json_keyfile = '/Users/Mishael.Ralph-Gbobo/PycharmProjects/Analytics-assistant/service_account.json'  # Update this path
+                    sheet_name = 'AI_Analytics_App_User_Information'  # Update this name
+                    save_to_gsheets(json_keyfile, sheet_name, firstname, lastname, email, occupation, company, phone)
+                    st.success("Thank you for submitting your information!")
                     st.rerun()
                 else:
-                    st.warning("Please fill in all fields before submitting")
+                    st.warning("Please fill in all required fields before submitting.")
 
         if st.session_state['form_submitted']:
             st.write("Thank you for submitting your information.")

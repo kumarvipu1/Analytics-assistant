@@ -11,3 +11,6 @@ plotly
 python-dotenv
 google-cloud-bigquery
 google-auth
+gspread
+oauth2client
+

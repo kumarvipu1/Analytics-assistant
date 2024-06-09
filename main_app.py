@@ -75,7 +75,7 @@ def main():
                 if firstname and lastname and email and submit_button:
                     st.session_state['form_submitted'] = True
                     # Save the user form data to Google Sheets
-                    json_keyfile = '/Users/Mishael.Ralph-Gbobo/PycharmProjects/Analytics-assistant/service_account.json'  # Update this path
+                    json_keyfile = '/Users/Mishael.Ralph-Gbobo/Library/CloudStorage/OneDrive-Global/Documents/AI_Analyst/ai_analyst_service_account.json.json'  # Update this path
                     sheet_name = 'AI_Analytics_App_User_Information'  # Update this name
                     save_to_gsheets(json_keyfile, sheet_name, firstname, lastname, email, occupation, company, phone)
                     st.success("Thank you for submitting your information!")

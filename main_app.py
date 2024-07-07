@@ -82,7 +82,8 @@ def main():
                 ChatOpenAI(temperature=0.5, model='gpt-3.5-turbo-0613',
                            openai_api_key=api_key),
                 df, verbose=False,
-                agent_type=AgentType.OPENAI_FUNCTIONS
+                agent_type=AgentType.OPENAI_FUNCTIONS,
+                handle_parsing_errors=True
             )
 
             # llama_index agent
@@ -92,9 +93,10 @@ def main():
 
             # langchain_agent
             agent = create_pandas_dataframe_agent(
-                ChatOpenAI(temperature=0.5, model='gpt-3.5-turbo-0613'),
+                ChatOpenAI(temperature=0, model='gpt-3.5-turbo-0613'),
                 df, verbose=False,
-                agent_type=AgentType.OPENAI_FUNCTIONS
+                agent_type=AgentType.OPENAI_FUNCTIONS,
+                handle_parsing_errors=True
             )
 
             # llama_index agent
@@ -112,7 +114,7 @@ def main():
         st.write(df_sum)
 
         # explanation of dataset using llama_index
-        with st.expander("See explanation"):
+        with st.expander("See dataset definition"):
             st.write(exp_output)
 
         # placeholders for interactive graphs
@@ -142,7 +144,7 @@ def main():
                 top_10_x = sorted_df[selected_x1].head(10).tolist()
 
                 # Filter the DataFrame to include only the top 10 'Genres' values
-                filtered_df = df[df[selected_x1].isin(top_10_x)]
+                filtered_df = grouped_df[grouped_df[selected_x1].isin(top_10_x)]
 
                 time.sleep(2)
                 # Plot using Plotly Express
@@ -152,7 +154,7 @@ def main():
                              color_discrete_sequence=px.colors.qualitative.Set1)
 
                 # Show the plot
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig)
 
         st.markdown("---")
 
@@ -182,7 +184,7 @@ def main():
                 top_10_x = sorted_df[selected_x2].head(10).tolist()
 
                 # Filter the DataFrame to include only the top 10 'Genres' values
-                filtered_df = df[df[selected_x2].isin(top_10_x)]
+                filtered_df = grouped_df[grouped_df[selected_x2].isin(top_10_x)]
 
                 time.sleep(2)
                 # Plot using Plotly Express
@@ -192,26 +194,30 @@ def main():
                              color_discrete_sequence=px.colors.qualitative.Set1)
 
                 # Show the plot
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig)
 
         # chat-box
         query = st.text_area("Insert your query")
 
+        query_with_context = f'dataset definition:\n {exp_result}' \
+                             f'user prompt: {query}'
+
         if st.button("Submit Query"):
-            result = agent.invoke(main_prompt.format(query_str=query))
+            result = agent.invoke({"input": main_prompt.format(query_str=query)})
 
             code, text = parse_response(result['output'])
 
-            if 'plt' in code:
+            st.write(str(text))
+
+            if ('plt' in code) or ('px' in code):
                 fig = exec(code)
                 st.pyplot(fig)
 
-            else:
+            with capture_output() as captured:
+                exec(code)
+                output = captured.getvalue() + '\n'
+            st.write(output)
 
-                with capture_output() as captured:
-                    exec(code)
-                    output = captured.getvalue() + '\n'
-                st.write(output)
 
 
 if __name__ == "__main__":

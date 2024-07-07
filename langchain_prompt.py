@@ -13,12 +13,15 @@ main_prompt = PromptTemplate.from_template(
     Import the necessary library, print the output in the end.
     If 'group' is in query, bin the column under consideration appropriately before proceeding with aggregation.
     
+    If number of variables in the column is more than 10 then filter the dataframe to show top 10 variables on the graph.
     Make the plot colourful and beautiful using fancy visual formatting.
-    If number of variables in the column is more than 10 then just show top 10 on the graph.
     Identify the variable of interest and highlight it on the chart. Keep the size of the figure small and clean.
     Make sure the plot has enough border size.
     
-    Do not explain the code. And always enclose the code in "```python" and "'''"
+    Do not explain the code. 
+    IMPORTANT: Output the result of analysis in text format. Enclose your result of analysis in "---text" and "---"
+    
+    And always enclose the code in "```python" and "'''"
             
     Lets think step by step.
 

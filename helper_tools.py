@@ -8,7 +8,6 @@ from llama_index.core.tools import QueryEngineTool, ToolMetadata
 import pandas as pd
 
 
-
 @st.cache_data
 def plot_graph(df, x_col, y_col, type):
     """
@@ -25,7 +24,7 @@ def plot_graph(df, x_col, y_col, type):
     """
     if type == 'line':
         fig = px.line(df, x=x_col, y=y_col)
-    elif type =='scatter':
+    elif type == 'scatter':
         fig = px.scatter(df, x=x_col, y=y_col)
     elif type == 'bar':
         fig = px.bar(df, x=x_col, y=y_col)
@@ -40,9 +39,17 @@ def plot_graph(df, x_col, y_col, type):
 def parse_response(response):
     decoded = bytes(str(response), "utf-8").decode("unicode_escape")
     pattern = r'```python\s*([\s\S]*?)\s*```'
+    exp_pattern = r'---text\s*([\s\S]*?)\s*---'
 
     matches = re.findall(pattern, decoded)
-    if matches:
+    exp = re.findall(exp_pattern, decoded)
+    if matches and exp:
+        code = str(matches[0])
+        text = str(exp[0]) + re.sub(re.escape(code), "", decoded).strip()
+    elif (not matches) and exp:
+        code = "print("")"
+        text = str(exp[0]) + re.sub(re.escape(code), "", decoded).strip()
+    elif matches and (not exp):
         code = str(matches[0])
         text = re.sub(re.escape(code), "", decoded).strip()
     else:
@@ -55,7 +62,7 @@ def parse_response(response):
 graph_plot_engine = FunctionTool.from_defaults(
     fn=plot_graph,
     tool_metadata=ToolMetadata(
-    name="graph",
-    description="Plots a suitable type of graph based on requirement and column input, the options to pick from are 'line','scatter', 'bar', 'histogram'",)
-
-    )
+        name="graph",
+        description="Plots a suitable type of graph based on requirement and column input, the options to pick from are"
+                    " 'line','scatter', 'bar', 'histogram'", )
+)

@@ -1,0 +1,10 @@
+pandas
+matplotlib
+langchain
+langchain-experimental
+langchain-openai
+streamlit
+llama-index
+llama-index[openai]
+plotly
+lida
